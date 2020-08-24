@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>节流</title>
+    <style>
+        .box{
+            width: 400px;
+            height:200px;
+            background-color: blanchedalmond;
+        }
+    </style>
+</head>
+<body>
+    <div class="box"></div>
+    
+    <script>
+        var box = document.querySelector(".box");
+        var move = function(e){
+            box.innerHTML = e.clientX
+        }
+
+        var choke = function(fn,wait){
+            var timmer = null;
+            return function(){
+                var arg = arguments;
+                timmer = timmer || setTimeout(() => {
+                    fn.apply(this,arg);
+                    timmer = null;
+                },wait)
+            }
+        }
+
+        box.onmousemove = choke(move,1000)
+
+    </script>
+</body>
+</html>
