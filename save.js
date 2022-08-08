@@ -29,7 +29,7 @@
                 },
                 "dataHandler": {
                     "type": "JSFunction",
-                    "value": "function resolve(res){\r\n  const { status, data } = res\r\n  if (status === 200) {\r\n    const list = data.rows.map(item => ({ ...item, id: item.WF_OrUnid }))\r\n    this.setState({ dataSource: list, total: data.total, loading: false })\r\n  }\r\n}"
+                    "value": "function resolve(res){\r\n  const { status, data } = res\r\n  if (status === 200) {\r\n    const list = data.rows.map(item => ({ ...item, id: item.WF_OrUnid }))\r\n    this.setState({ dataSource: list, total: data.total, loading: false })\r\n    console.log(data.total)\r\n  }\r\n}"
                 },
                 "isInit": false
             },
@@ -72,6 +72,29 @@
                 "willFetch": {
                     "type": "JSFunction",
                     "value": "function requsetIntercetor(options) {\r\n  options.appType = \"bpm\"\r\n  return options;\r\n}"
+                },
+                "isInit": false
+            },
+            {
+                "id": "addProcess",
+                "type": "axios",
+                "options": {
+                    "uri": "/bpm/rule?wf_num=R_S002_B003",
+                    "method": "POST",
+                    "isCors": true,
+                    "headers": {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    "params": {},
+                    "timeout": 5000
+                },
+                "willFetch": {
+                    "type": "JSFunction",
+                    "value": "function intercetor(options) {\r\n  options.appType = \"bpm\"\r\n  return options;\r\n}"
+                },
+                "dataHandler": {
+                    "type": "JSFunction",
+                    "value": "function resolve(res) {\r\n  if (res.data.Status === \"ok\") {\r\n    Next.Message.success(res.data.msg)\r\n    this.setState({\r\n      addProcessShow: false\r\n    })\r\n    this.dataSourceMap.getProcessData.load({page:1,rows:this.state.rows})\r\n  } else {\r\n    Next.Message.error(res.data.msg)\r\n  }\r\n}"
                 },
                 "isInit": false
             }
@@ -121,13 +144,33 @@
         "monitorUrl": {
             "type": "JSExpression",
                 "value": "''"
+        },
+        "showTable": {
+            "type": "JSExpression",
+                "value": "false"
+        },
+        "addProcessShow": {
+            "type": "JSExpression",
+                "value": "false"
+        },
+        "processValue": {
+            "type": "JSExpression",
+                "value": "{}"
+        },
+        "Processid": {
+            "type": "JSExpression",
+                "value": "''"
+        },
+        "addProcessField": {
+            "type": "JSExpression",
+                "value": "new Next.Field(this)"
         }
     },
     "css": "body {\n  font-size: 12px;\n}\n\n.button {\n  width: 100px;\n  color: #ff00ff\n}",
         "lifeCycles": {
         "componentDidMount": {
             "type": "JSFunction",
-                "value": "function componentDidMount() {\n  this.dataSourceMap.getProcessData.load({\n    page: 1,\n    row: 20\n  });\n  this.dataSourceMap.getFormList.load().then(res => {\n    this.setState({\n      formList: res.rows\n    });\n  });\n}"
+                "value": "function componentDidMount() {\n  this.dataSourceMap.getProcessData.load({\n    page: this.state.page,\n    rows: this.state.rows\n  });\n  this.dataSourceMap.getFormList.load().then(res => {\n    this.setState({\n      formList: res.rows\n    });\n  });\n}"
         },
         "componentWillUnmount": {
             "type": "JSFunction",
@@ -154,9 +197,33 @@
         "onExpand": {
             "type": "JSFunction",
                 "value": "function onExpand(expanded, record) {\n  if (!this.state.monitorSourceData[record.id]) {\n    const url = `/bpm/r?wf_num=D_S014_J004&wf_gridnum=V_S014_G008&Processid=${record.Processid}`;\n    this.setState({\n      monitorUrl: url\n    }, () => {\n      this.dataSourceMap.getMonitorData.load({\n        page: 1,\n        rows: 20\n      }).then(res => {\n        console.log(res);\n        const list = res.rows.map(item => ({ ...item,\n          id: item.WF_OrUnid\n        }));\n        this.setState({\n          monitorSourceData: { ...this.state.monitorSourceData,\n            [record.id]: list\n          },\n          monitorPagination: { ...this.state.monitorPagination,\n            [record.id]: {\n              page: 1,\n              rows: 20,\n              total: res.total\n            }\n          }\n        });\n      });\n    });\n  }\n}"
+        },
+        "onExpandByMonitor": {
+            "type": "JSFunction",
+                "value": "function onExpandByMonitor(expanded, record) {}"
+        },
+        "onChange": {
+            "type": "JSFunction",
+                "value": "function onChange(pagination) {\n  const {\n    current,\n    pageSize\n  } = pagination;\n  this.dataSourceMap.getProcessData.load({\n    page: current,\n    rows: pageSize\n  }).then(() => {\n    this.setState({\n      page: current,\n      rows: pageSize\n    });\n  });\n}"
+        },
+        "onClick": {
+            "type": "JSFunction",
+                "value": "function onClick() {\n  this.setState({\n    showTable: !this.state.showTable\n  });\n}"
+        },
+        "handleAddProcessShow": {
+            "type": "JSFunction",
+                "value": "function handleAddProcessShow() {\n  const Processid = window.uuidv4().split(\"-\").join(\"\");\n  this.state.addProcessField.setValue(\"Processid\", Processid);\n  this.setState({\n    addProcessShow: true,\n    processValue: {\n      Processid\n    }\n  });\n}"
+        },
+        "closeAddProcess": {
+            "type": "JSFunction",
+                "value": "function closeAddProcess() {\n  this.setState({\n    addProcessShow: false\n  });\n}"
+        },
+        "onClick_processSubmit": {
+            "type": "JSFunction",
+                "value": "function onClick_processSubmit(value) {\n  this.setState({\n    Processid: value.Processid\n  });\n  console.log(value);\n  this.dataSourceMap.addProcess.load({ ...value,\n    Nodeid: \"Process\",\n    QryNodeType: \"Process\"\n  });\n}"
         }
     },
-    "originCode": "class LowcodeComponent extends Component {\n  state = {\n    columns: [\n      {\n        title: '流程名称',\n        dataIndex: 'NodeName',\n        key:'NodeName',\n        render(text, record) {\n          return (\n            <span onClick={this.handleProcess.bind(this, record)} style={{ color: '#0fb3b4', cursor: \"pointer\" }}>{text}</span>\n          )\n        }\n      }, {\n        title: '所属应用',\n        key: 'WF_Appid',\n        dataIndex: 'WF_Appid'\n      }, {\n        title: \"所属分类\",\n        dataIndex: 'Folderid',\n        key: 'Folderid'\n      }, {\n        title: '绑定表单',\n        dataIndex: 'FormName',\n        key: 'FormName',\n        render(text, record) {\n          return (\n            <span onClick={this.handleForm.bind(this, record)} style={{ cursor: \"pointer\", color: \"#0fb3b4\" }}>{text}</span>\n          )\n        }\n      }, {\n        title: '设计者',\n        dataIndex: 'WF_AddName',\n        key: 'WF_AddName',\n      }, {\n        title: '最后更新时间',\n        dataIndex: 'WF_LastModified',\n        key: 'WF_LastModified'\n      }, {\n        title: '版本',\n        dataIndex: 'WF_Version',\n        key: 'WF_Version'\n      }, {\n        title: '状态',\n        dataIndex: 'Status',\n        key: 'Status',\n        render(record) {\n          if (record == \"1\") {\n            return (\n              <span style={{ color: '#0fb3b4' }}>已发布</span>\n            )\n          }\n          if (record == \"0\") {\n            return (\n              <span style={{ color: '#ff3000' }}>未发布</span>\n            )\n          }\n        }\n      }, {\n        title: '启动',\n        dataIndex: '',\n        key:'run',\n        render(text, record) {\n          return (\n            <span onClick={this.handleRun.bind(this, record)} style={{ color: '#0fb3b4', cursor: \"pointer\" }}>启动</span>\n          )\n        }\n      }\n    ],\n    monitorColumns:[\n      {\n        title:'编号',\n        dataIndex:'WF_DocNumber',\n        key:'WF_DocNumber'\n      },\n      {\n        title:'标题',\n        dataIndex:'Subject',\n        key:'Subject'\n      },\n      {\n        title:'当前处理人',\n        dataIndex:'WF_Author_CN',\n        key:'WF_Author_CN'\n      },\n      {\n        title:'申请者',\n        dataIndex:'WF_AddName_CN',\n        key:'WF_AddName_CN'\n      },\n      {\n        title:'申请时间',\n        dataIndex:'WF_DocCreated',\n        key:'WF_DocCreated'\n      },\n      {\n        title:'流程名称',\n        dataIndex:'WF_ProcessName',\n        key:'WF_ProcessName'\n      },\n      {\n        title:'当前环节',\n        dataIndex:'WF_CurrentNodeName',\n        key:'WF_CurrentNodeName'\n      },\n      {\n        title:'耗时',\n        dataIndex:'TotalTime',\n        key:'TotalTime',\n        render: (text) => {\n          return <span style={{color:'#288dff'}}>{text}</span>\n        }\n      }\n    ],\n    dataSource: [{\n      \"WF_Appid\": \"\",\n      \"Status\": \"1\",\n      \"Folderid\": \"\",\n      \"WF_Version\": \"1.0\",\n      \"Processid\": \"22d26ed003266041a0092f00dd3875ba976d\",\n      \"NodeName\": \"请假流程3.0(copy)\",\n      \"WF_OrUnid\": \"a20233f20d1e304d5f0a98606b3c12ecf6e3\",\n      \"FormNumber\": \"F_test0001_P003\",\n      \"WF_LastModified\": \"2022-07-21 18:33:51\",\n      \"WF_AddName_CN\": \"admin\",\n      \"ProcessNumber\": \"\",\n      \"WF_AddName\": \"admin\",\n      \"FormName\": \"请假表单3.0\",\n      \"id\": \"a20233f20d1e304d5f0a98606b3c12ecf6e3\"\n    }, {\n        \"WF_Appid\": \"\",\n        \"Status\": \"0\",\n        \"Folderid\": \"\",\n        \"WF_Version\": \"1.0\",\n        \"Processid\": \"1137520aa57d4f64a0e6d5919e6f0242\",\n        \"NodeName\": \"测试事件\",\n        \"WF_OrUnid\": \"e15bd2f10894a0425508dd602ba51c8f4419\",\n        \"FormNumber\": \"\",\n        \"WF_LastModified\": \"2022-07-07 16:10:45\",\n        \"WF_AddName_CN\": \"admin\",\n        \"ProcessNumber\": \"\",\n        \"WF_AddName\": \"admin\",\n        \"FormName\": \"\",\n        \"id\": \"e15bd2f10894a0425508dd602ba51c8f4419\"\n      }, {\n        \"WF_Appid\": \"\",\n        \"Status\": \"0\",\n        \"Folderid\": \"\",\n        \"WF_Version\": \"1.0\",\n        \"Processid\": \"566da15b643a428786a904a9e769afe5\",\n        \"NodeName\": \"流程并行测试\",\n        \"WF_OrUnid\": \"231ab170080fe045420bd4f0a1b448c3c6d8\",\n        \"FormNumber\": \"\",\n        \"WF_LastModified\": \"2022-07-06 15:34:43\",\n        \"WF_AddName_CN\": \"admin\",\n        \"ProcessNumber\": \"\",\n        \"WF_AddName\": \"admin\",\n        \"FormName\": \"\",\n        \"id\": \"231ab170080fe045420bd4f0a1b448c3c6d8\"\n      }],\n    monitorSourceData: {\n      \"a20233f20d1e304d5f0a98606b3c12ecf6e3\":[\n      {\n        \"id\": \"0722251501f1304b8009b1c08000154f554c\",\n        \"WF_CurrentNodeName\": \"主管审批\",\n        \"WF_PauseFlag\": \"\",\n        \"WF_OrUnid\": \"0722251501f1304b8009b1c08000154f554c\",\n        \"WF_DocCreated\": \"2022-07-12 14:16:36\",\n        \"WF_Processid\": \"c44dd4064c0c49d3a0b10c0389c82952\",\n        \"WF_AddDeptid\": \"DP1016\",\n        \"WF_Author_CN\": \"admin,谢霆锋\",\n        \"WF_ProcessName\": \"流程并行测试\",\n        \"TotalTime\": \"141(小时)\",\n        \"Subject\": \"流程并行测试\",\n        \"WF_AddName_CN\": \"admin\",\n        \"WF_DocNumber\": \"115466\"\n      },\n      {\n        \"id\": \"10d55bea09e9004bac091f10dcab9af89929\",\n        \"WF_CurrentNodeName\": \"主管审批\",\n        \"WF_PauseFlag\": \"\",\n        \"WF_OrUnid\": \"10d55bea09e9004bac091f10dcab9af89929\",\n        \"WF_DocCreated\": \"2022-07-13 18:19:40\",\n        \"WF_Processid\": \"c44dd4064c0c49d3a0b10c0389c82952\",\n        \"WF_AddDeptid\": \"DP1016\",\n        \"WF_Author_CN\": \"\",\n        \"WF_ProcessName\": \"流程并行测试\",\n        \"TotalTime\": \"129(小时)\",\n        \"Subject\": \"流程并行测试\",\n        \"WF_AddName_CN\": \"admin\",\n        \"WF_DocNumber\": \"115469\"\n      },\n      {\n        \"id\": \"410bad63056f704359080c00c93f6d0be354\",\n        \"WF_CurrentNodeName\": \"经理审批,老板审批\",\n        \"WF_PauseFlag\": \"\",\n        \"WF_OrUnid\": \"410bad63056f704359080c00c93f6d0be354\",\n        \"WF_DocCreated\": \"2022-07-12 00:36:58\",\n        \"WF_Processid\": \"c44dd4064c0c49d3a0b10c0389c82952\",\n        \"WF_AddDeptid\": \"DP1016\",\n        \"WF_Author_CN\": \"admin,谢霆锋\",\n        \"WF_ProcessName\": \"流程并行测试\",\n        \"TotalTime\": \"145(小时)\",\n        \"Subject\": \"流程并行测试\",\n        \"WF_AddName_CN\": \"admin\",\n        \"WF_DocNumber\": \"115458\"\n      }\n      ]},\n    monitorPagination:{},\n    formList:[],\n    total:0,\n    loading:true,\n    page:1,\n    rows:20,\n    monitorUrl:''\n  }\n  componentDidMount() {\n    this.dataSourceMap.getProcessData.load({page:1,row:20})\n    this.dataSourceMap.getFormList.load().then(res => {\n      this.setState({formList:res.rows})\n    })\n  }\n  componentWillUnmount() {\n    console.log(this.state.monitorSourceData)\n    console.log('will unmount');\n  }\n\n  handleRun(record){\n    const origin = window.location.origin\n    window.open(`${origin}/process.html?processId=${record.Processid}`)\n  }\n\n  handleProcess(record){\n    const origin = window.location.origin\n    window.open(`${origin}/xflow.html?Processid=${record.Processid}`)\n  }\n\n  handleForm(record){\n    const origin = window.location.origin\n    const index = this.state.formList.findIndex(item => item.FormName === record.FormName)\n    window.open(`${origin}/processDesign.html?id=${this.state.formList[index].WF_OrUnid}`)\n  }\n \n  showTotal(total, range) {\n    return `${range[0]}-${range[1]} of ${total} items`\n  }\n\n  onExpand(expanded, record){\n    if (!this.state.monitorSourceData[record.id]){\n      const url = `/bpm/r?wf_num=D_S014_J004&wf_gridnum=V_S014_G008&Processid=${record.Processid}`\n      this.setState({ monitorUrl: url }, () => {\n        this.dataSourceMap.getMonitorData.load({ page: 1, rows: 20 }).then(res => {\n          console.log(res)\n          const list = res.rows.map(item => ({ ...item, id: item.WF_OrUnid }))\n          this.setState({\n            monitorSourceData: {\n              ...this.state.monitorSourceData,\n              [record.id]: list\n            },\n            monitorPagination: {\n              ...this.state.monitorPagination,\n              [record.id]: {\n                page: 1,\n                rows: 20,\n                total: res.total\n              }\n            }\n          })\n        })\n      })\n    }\n\t}\n}",
+    "originCode": "class LowcodeComponent extends Component {\n  state = {\n    columns: [\n      {\n        title: '流程名称',\n        dataIndex: 'NodeName',\n        key:'NodeName',\n        render(text, record) {\n          return (\n            <span onClick={this.handleProcess.bind(this, record)} style={{ color: '#0fb3b4', cursor: \"pointer\" }}>{text}</span>\n          )\n        }\n      }, {\n        title: '所属应用',\n        key: 'WF_Appid',\n        dataIndex: 'WF_Appid'\n      }, {\n        title: \"所属分类\",\n        dataIndex: 'Folderid',\n        key: 'Folderid'\n      }, {\n        title: '绑定表单',\n        dataIndex: 'FormName',\n        key: 'FormName',\n        render(text, record) {\n          return (\n            <span onClick={this.handleForm.bind(this, record)} style={{ cursor: \"pointer\", color: \"#0fb3b4\" }}>{text}</span>\n          )\n        }\n      }, {\n        title: '设计者',\n        dataIndex: 'WF_AddName',\n        key: 'WF_AddName',\n      }, {\n        title: '最后更新时间',\n        dataIndex: 'WF_LastModified',\n        key: 'WF_LastModified'\n      }, {\n        title: '版本',\n        dataIndex: 'WF_Version',\n        key: 'WF_Version'\n      }, {\n        title: '状态',\n        dataIndex: 'Status',\n        key: 'Status',\n        render(record) {\n          if (record == \"1\") {\n            return (\n              <span style={{ color: '#0fb3b4' }}>已发布</span>\n            )\n          }\n          if (record == \"0\") {\n            return (\n              <span style={{ color: '#ff3000' }}>未发布</span>\n            )\n          }\n        }\n      }, {\n        title: '启动',\n        dataIndex: '',\n        key:'run',\n        render(text, record) {\n          return (\n            <span onClick={this.handleRun.bind(this, record)} style={{ color: '#0fb3b4', cursor: \"pointer\" }}>启动</span>\n          )\n        }\n      }\n    ],\n    monitorColumns:[\n      {\n        title:'编号',\n        dataIndex:'WF_DocNumber',\n        key:'WF_DocNumber'\n      },\n      {\n        title:'标题',\n        dataIndex:'Subject',\n        key:'Subject'\n      },\n      {\n        title:'当前处理人',\n        dataIndex:'WF_Author_CN',\n        key:'WF_Author_CN'\n      },\n      {\n        title:'申请者',\n        dataIndex:'WF_AddName_CN',\n        key:'WF_AddName_CN'\n      },\n      {\n        title:'申请时间',\n        dataIndex:'WF_DocCreated',\n        key:'WF_DocCreated'\n      },\n      {\n        title:'流程名称',\n        dataIndex:'WF_ProcessName',\n        key:'WF_ProcessName'\n      },\n      {\n        title:'当前环节',\n        dataIndex:'WF_CurrentNodeName',\n        key:'WF_CurrentNodeName'\n      },\n      {\n        title:'耗时',\n        dataIndex:'TotalTime',\n        key:'TotalTime',\n        render: (text) => {\n          return <span style={{color:'#288dff'}}>{text}</span>\n        }\n      }\n    ],\n    dataSource: [{\n      \"WF_Appid\": \"\",\n      \"Status\": \"1\",\n      \"Folderid\": \"\",\n      \"WF_Version\": \"1.0\",\n      \"Processid\": \"22d26ed003266041a0092f00dd3875ba976d\",\n      \"NodeName\": \"请假流程3.0(copy)\",\n      \"WF_OrUnid\": \"a20233f20d1e304d5f0a98606b3c12ecf6e3\",\n      \"FormNumber\": \"F_test0001_P003\",\n      \"WF_LastModified\": \"2022-07-21 18:33:51\",\n      \"WF_AddName_CN\": \"admin\",\n      \"ProcessNumber\": \"\",\n      \"WF_AddName\": \"admin\",\n      \"FormName\": \"请假表单3.0\",\n      \"id\": \"a20233f20d1e304d5f0a98606b3c12ecf6e3\"\n    }, {\n        \"WF_Appid\": \"\",\n        \"Status\": \"0\",\n        \"Folderid\": \"\",\n        \"WF_Version\": \"1.0\",\n        \"Processid\": \"1137520aa57d4f64a0e6d5919e6f0242\",\n        \"NodeName\": \"测试事件\",\n        \"WF_OrUnid\": \"e15bd2f10894a0425508dd602ba51c8f4419\",\n        \"FormNumber\": \"\",\n        \"WF_LastModified\": \"2022-07-07 16:10:45\",\n        \"WF_AddName_CN\": \"admin\",\n        \"ProcessNumber\": \"\",\n        \"WF_AddName\": \"admin\",\n        \"FormName\": \"\",\n        \"id\": \"e15bd2f10894a0425508dd602ba51c8f4419\"\n      }, {\n        \"WF_Appid\": \"\",\n        \"Status\": \"0\",\n        \"Folderid\": \"\",\n        \"WF_Version\": \"1.0\",\n        \"Processid\": \"566da15b643a428786a904a9e769afe5\",\n        \"NodeName\": \"流程并行测试\",\n        \"WF_OrUnid\": \"231ab170080fe045420bd4f0a1b448c3c6d8\",\n        \"FormNumber\": \"\",\n        \"WF_LastModified\": \"2022-07-06 15:34:43\",\n        \"WF_AddName_CN\": \"admin\",\n        \"ProcessNumber\": \"\",\n        \"WF_AddName\": \"admin\",\n        \"FormName\": \"\",\n        \"id\": \"231ab170080fe045420bd4f0a1b448c3c6d8\"\n      }],\n    monitorSourceData: {\n      \"a20233f20d1e304d5f0a98606b3c12ecf6e3\":[\n      {\n        \"id\": \"0722251501f1304b8009b1c08000154f554c\",\n        \"WF_CurrentNodeName\": \"主管审批\",\n        \"WF_PauseFlag\": \"\",\n        \"WF_OrUnid\": \"0722251501f1304b8009b1c08000154f554c\",\n        \"WF_DocCreated\": \"2022-07-12 14:16:36\",\n        \"WF_Processid\": \"c44dd4064c0c49d3a0b10c0389c82952\",\n        \"WF_AddDeptid\": \"DP1016\",\n        \"WF_Author_CN\": \"admin,谢霆锋\",\n        \"WF_ProcessName\": \"流程并行测试\",\n        \"TotalTime\": \"141(小时)\",\n        \"Subject\": \"流程并行测试\",\n        \"WF_AddName_CN\": \"admin\",\n        \"WF_DocNumber\": \"115466\"\n      },\n      {\n        \"id\": \"10d55bea09e9004bac091f10dcab9af89929\",\n        \"WF_CurrentNodeName\": \"主管审批\",\n        \"WF_PauseFlag\": \"\",\n        \"WF_OrUnid\": \"10d55bea09e9004bac091f10dcab9af89929\",\n        \"WF_DocCreated\": \"2022-07-13 18:19:40\",\n        \"WF_Processid\": \"c44dd4064c0c49d3a0b10c0389c82952\",\n        \"WF_AddDeptid\": \"DP1016\",\n        \"WF_Author_CN\": \"\",\n        \"WF_ProcessName\": \"流程并行测试\",\n        \"TotalTime\": \"129(小时)\",\n        \"Subject\": \"流程并行测试\",\n        \"WF_AddName_CN\": \"admin\",\n        \"WF_DocNumber\": \"115469\"\n      },\n      {\n        \"id\": \"410bad63056f704359080c00c93f6d0be354\",\n        \"WF_CurrentNodeName\": \"经理审批,老板审批\",\n        \"WF_PauseFlag\": \"\",\n        \"WF_OrUnid\": \"410bad63056f704359080c00c93f6d0be354\",\n        \"WF_DocCreated\": \"2022-07-12 00:36:58\",\n        \"WF_Processid\": \"c44dd4064c0c49d3a0b10c0389c82952\",\n        \"WF_AddDeptid\": \"DP1016\",\n        \"WF_Author_CN\": \"admin,谢霆锋\",\n        \"WF_ProcessName\": \"流程并行测试\",\n        \"TotalTime\": \"145(小时)\",\n        \"Subject\": \"流程并行测试\",\n        \"WF_AddName_CN\": \"admin\",\n        \"WF_DocNumber\": \"115458\"\n      }\n      ]},\n    monitorPagination:{},\n    formList:[],\n    total:0,\n    loading:true,\n    page:1,\n    rows:20,\n    monitorUrl:'',\n    showTable:false,\n    addProcessShow:false,\n    processValue:{},\n    Processid:'',\n    addProcessField: new Next.Field(this),\n  }\n  componentDidMount() {\n    this.dataSourceMap.getProcessData.load({page:this.state.page,rows:this.state.rows})\n    this.dataSourceMap.getFormList.load().then(res => {\n      this.setState({formList:res.rows})\n    })\n  }\n  componentWillUnmount() {\n    console.log(this.state.monitorSourceData)\n    console.log('will unmount');\n  }\n\n  handleRun(record){\n    const origin = window.location.origin\n    window.open(`${origin}/process.html?processId=${record.Processid}`)\n  }\n\n  handleProcess(record){\n    const origin = window.location.origin\n    window.open(`${origin}/xflow.html?Processid=${record.Processid}`)\n  }\n\n  handleForm(record){\n    const origin = window.location.origin\n    const index = this.state.formList.findIndex(item => item.FormName === record.FormName)\n    window.open(`${origin}/processDesign.html?id=${this.state.formList[index].WF_OrUnid}`)\n  }\n \n  showTotal(total, range) {\n    return `${range[0]}-${range[1]} of ${total} items`\n  }\n\n  onExpand(expanded, record){\n    if (!this.state.monitorSourceData[record.id]){\n      const url = `/bpm/r?wf_num=D_S014_J004&wf_gridnum=V_S014_G008&Processid=${record.Processid}`\n      this.setState({ monitorUrl: url }, () => {\n        this.dataSourceMap.getMonitorData.load({ page: 1, rows: 20 }).then(res => {\n          console.log(res)\n          const list = res.rows.map(item => ({ ...item, id: item.WF_OrUnid }))\n          this.setState({\n            monitorSourceData: {\n              ...this.state.monitorSourceData,\n              [record.id]: list\n            },\n            monitorPagination: {\n              ...this.state.monitorPagination,\n              [record.id]: {\n                page: 1,\n                rows: 20,\n                total: res.total\n              }\n            }\n          })\n        })\n      })\n    }\n\t}\n\n  onExpandByMonitor(expanded, record){\n\t}\n\n  onChange(pagination) {\n    const { current, pageSize } = pagination\n    this.dataSourceMap.getProcessData.load({ page: current, rows: pageSize }).then(() => {\n      this.setState({page:current,rows:pageSize})\n    })\n\n  }\n\n\tonClick(){\n    this.setState({showTable:!this.state.showTable})\n\t}\n\n  // 按钮\n  handleAddProcessShow() {\n    const Processid = window.uuidv4().split(\"-\").join(\"\")\n    this.state.addProcessField.setValue(\"Processid\", Processid)\n    this.setState({\n      addProcessShow: true,\n      processValue: {\n        Processid\n      }\n    })\n  }\n\n  closeAddProcess(){\n    this.setState({\n      addProcessShow: false\n    })\n  }\n\n  onClick_processSubmit(value) {\n    this.setState({\n      Processid: value.Processid\n    })\n    console.log(value)\n    this.dataSourceMap.addProcess.load({\n      ...value,\n      Nodeid: \"Process\",\n      QryNodeType: \"Process\"\n    })\n  }\n}",
         "hidden": false,
             "title": "",
                 "isLocked": false,
@@ -262,6 +329,10 @@
                                                             "isLocked": false,
                                                             "condition": true,
                                                             "conditionGroup": "",
+                                                            "loopArgs": [
+                                                                "",
+                                                                ""
+                                                            ],
                                                             "children": [
                                                                 {
                                                                     "componentName": "NextRow",
@@ -272,12 +343,17 @@
                                                                     "isLocked": false,
                                                                     "condition": true,
                                                                     "conditionGroup": "",
+                                                                    "loopArgs": [
+                                                                        "",
+                                                                        ""
+                                                                    ],
                                                                     "children": [
                                                                         {
                                                                             "componentName": "NextCol",
                                                                             "id": "node_ocl61nb0y89",
                                                                             "props": {
-                                                                                "colSpan": 1
+                                                                                "colSpan": 1,
+                                                                                "justifyContent": "flex-start"
                                                                             },
                                                                             "title": "列",
                                                                             "hidden": false,
@@ -301,6 +377,430 @@
                                                                                     "condition": true,
                                                                                     "conditionGroup": "",
                                                                                     "children": [
+                                                                                        {
+                                                                                            "componentName": "Box",
+                                                                                            "id": "node_ocl6fwopsg4o",
+                                                                                            "props": {
+                                                                                                "direction": "row",
+                                                                                                "justify": "space-between",
+                                                                                                "align": "center",
+                                                                                                "style": {
+                                                                                                    "width": "",
+                                                                                                    "height": "40px",
+                                                                                                    "paddingLeft": "10px"
+                                                                                                },
+                                                                                                "spacing": 0
+                                                                                            },
+                                                                                            "hidden": false,
+                                                                                            "title": "",
+                                                                                            "isLocked": false,
+                                                                                            "condition": true,
+                                                                                            "conditionGroup": "",
+                                                                                            "children": [
+                                                                                                {
+                                                                                                    "componentName": "Box",
+                                                                                                    "id": "node_ocl6fwopsg4p",
+                                                                                                    "props": {
+                                                                                                        "direction": "row",
+                                                                                                        "justify": "flex-start",
+                                                                                                        "align": "center",
+                                                                                                        "style": {
+                                                                                                            "width": "800px"
+                                                                                                        },
+                                                                                                        "spacing": 20
+                                                                                                    },
+                                                                                                    "hidden": false,
+                                                                                                    "title": "",
+                                                                                                    "isLocked": false,
+                                                                                                    "condition": true,
+                                                                                                    "conditionGroup": "",
+                                                                                                    "children": [
+                                                                                                        {
+                                                                                                            "componentName": "Button",
+                                                                                                            "id": "node_ocl6fwopsg5o",
+                                                                                                            "props": {
+                                                                                                                "prefix": "next-",
+                                                                                                                "type": "primary",
+                                                                                                                "size": "medium",
+                                                                                                                "htmlType": "button",
+                                                                                                                "component": "button",
+                                                                                                                "children": "新增",
+                                                                                                                "icon": "add",
+                                                                                                                "iconSize": "xxs",
+                                                                                                                "ghost": false,
+                                                                                                                "loading": false,
+                                                                                                                "text": false,
+                                                                                                                "warning": false,
+                                                                                                                "disabled": false,
+                                                                                                                "__events": {
+                                                                                                                    "eventDataList": [
+                                                                                                                        {
+                                                                                                                            "type": "componentEvent",
+                                                                                                                            "name": "onClick",
+                                                                                                                            "relatedEventName": "handleAddProcessShow"
+                                                                                                                        }
+                                                                                                                    ],
+                                                                                                                    "eventList": [
+                                                                                                                        {
+                                                                                                                            "name": "onClick",
+                                                                                                                            "description": "点击按钮的回调\n@param {Object} e Event Object",
+                                                                                                                            "disabled": true
+                                                                                                                        },
+                                                                                                                        {
+                                                                                                                            "name": "onMouseUp",
+                                                                                                                            "disabled": false
+                                                                                                                        }
+                                                                                                                    ]
+                                                                                                                },
+                                                                                                                "onClick": {
+                                                                                                                    "type": "JSFunction",
+                                                                                                                    "value": "function(){this.handleAddProcessShow.apply(this,Array.prototype.slice.call(arguments).concat([])) }"
+                                                                                                                }
+                                                                                                            },
+                                                                                                            "hidden": false,
+                                                                                                            "title": "",
+                                                                                                            "isLocked": false,
+                                                                                                            "condition": true,
+                                                                                                            "conditionGroup": "",
+                                                                                                            "loop": {
+                                                                                                                "type": "JSExpression",
+                                                                                                                "value": "false",
+                                                                                                                "mock": []
+                                                                                                            },
+                                                                                                            "loopArgs": [
+                                                                                                                "",
+                                                                                                                ""
+                                                                                                            ],
+                                                                                                            "children": [
+                                                                                                                {
+                                                                                                                    "componentName": "Icon",
+                                                                                                                    "id": "node_ocl6fwopsg5p",
+                                                                                                                    "props": {
+                                                                                                                        "type": "add",
+                                                                                                                        "style": {
+                                                                                                                            "marginRight": 5
+                                                                                                                        }
+                                                                                                                    },
+                                                                                                                    "hidden": false,
+                                                                                                                    "title": "",
+                                                                                                                    "isLocked": false,
+                                                                                                                    "condition": true,
+                                                                                                                    "conditionGroup": ""
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "componentName": "Button",
+                                                                                                            "id": "node_ocl6fwopsg5s",
+                                                                                                            "props": {
+                                                                                                                "prefix": "next-",
+                                                                                                                "type": "normal",
+                                                                                                                "size": "medium",
+                                                                                                                "htmlType": "button",
+                                                                                                                "component": "button",
+                                                                                                                "children": "删除",
+                                                                                                                "icon": "ashbin",
+                                                                                                                "iconSize": "xs",
+                                                                                                                "ghost": false,
+                                                                                                                "loading": false,
+                                                                                                                "text": false,
+                                                                                                                "warning": false,
+                                                                                                                "disabled": false
+                                                                                                            },
+                                                                                                            "hidden": false,
+                                                                                                            "title": "",
+                                                                                                            "isLocked": false,
+                                                                                                            "condition": true,
+                                                                                                            "conditionGroup": "",
+                                                                                                            "loop": {
+                                                                                                                "type": "JSExpression",
+                                                                                                                "value": "false",
+                                                                                                                "mock": []
+                                                                                                            },
+                                                                                                            "loopArgs": [
+                                                                                                                "",
+                                                                                                                ""
+                                                                                                            ],
+                                                                                                            "children": [
+                                                                                                                {
+                                                                                                                    "componentName": "Icon",
+                                                                                                                    "id": "node_ocl6fwopsg5t",
+                                                                                                                    "props": {
+                                                                                                                        "type": "ashbin",
+                                                                                                                        "style": {
+                                                                                                                            "marginRight": 5
+                                                                                                                        }
+                                                                                                                    },
+                                                                                                                    "hidden": false,
+                                                                                                                    "title": "",
+                                                                                                                    "isLocked": false,
+                                                                                                                    "condition": true,
+                                                                                                                    "conditionGroup": ""
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "componentName": "Button",
+                                                                                                            "id": "node_ocl6fwopsg5w",
+                                                                                                            "props": {
+                                                                                                                "prefix": "next-",
+                                                                                                                "type": "normal",
+                                                                                                                "size": "medium",
+                                                                                                                "htmlType": "button",
+                                                                                                                "component": "button",
+                                                                                                                "children": "复制",
+                                                                                                                "icon": "copy",
+                                                                                                                "iconSize": "xs",
+                                                                                                                "ghost": false,
+                                                                                                                "loading": false,
+                                                                                                                "text": false,
+                                                                                                                "warning": false,
+                                                                                                                "disabled": false
+                                                                                                            },
+                                                                                                            "hidden": false,
+                                                                                                            "title": "",
+                                                                                                            "isLocked": false,
+                                                                                                            "condition": true,
+                                                                                                            "conditionGroup": "",
+                                                                                                            "loop": {
+                                                                                                                "type": "JSExpression",
+                                                                                                                "value": "false",
+                                                                                                                "mock": []
+                                                                                                            },
+                                                                                                            "loopArgs": [
+                                                                                                                "",
+                                                                                                                ""
+                                                                                                            ],
+                                                                                                            "children": [
+                                                                                                                {
+                                                                                                                    "componentName": "Icon",
+                                                                                                                    "id": "node_ocl6fwopsg5x",
+                                                                                                                    "props": {
+                                                                                                                        "type": "copy",
+                                                                                                                        "style": {
+                                                                                                                            "marginRight": 5
+                                                                                                                        }
+                                                                                                                    },
+                                                                                                                    "hidden": false,
+                                                                                                                    "title": "",
+                                                                                                                    "isLocked": false,
+                                                                                                                    "condition": true,
+                                                                                                                    "conditionGroup": ""
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "componentName": "Button",
+                                                                                                            "id": "node_ocl6fwopsg60",
+                                                                                                            "props": {
+                                                                                                                "prefix": "next-",
+                                                                                                                "type": "normal",
+                                                                                                                "size": "medium",
+                                                                                                                "htmlType": "button",
+                                                                                                                "component": "button",
+                                                                                                                "children": "发布",
+                                                                                                                "icon": "select",
+                                                                                                                "iconSize": "xxs",
+                                                                                                                "ghost": false,
+                                                                                                                "loading": false,
+                                                                                                                "text": false,
+                                                                                                                "warning": false,
+                                                                                                                "disabled": false
+                                                                                                            },
+                                                                                                            "hidden": false,
+                                                                                                            "title": "",
+                                                                                                            "isLocked": false,
+                                                                                                            "condition": true,
+                                                                                                            "conditionGroup": "",
+                                                                                                            "loop": {
+                                                                                                                "type": "JSExpression",
+                                                                                                                "value": "false",
+                                                                                                                "mock": []
+                                                                                                            },
+                                                                                                            "loopArgs": [
+                                                                                                                "",
+                                                                                                                ""
+                                                                                                            ],
+                                                                                                            "children": [
+                                                                                                                {
+                                                                                                                    "componentName": "Icon",
+                                                                                                                    "id": "node_ocl6fwopsg6l",
+                                                                                                                    "props": {
+                                                                                                                        "type": "select",
+                                                                                                                        "style": {
+                                                                                                                            "marginRight": 5
+                                                                                                                        }
+                                                                                                                    },
+                                                                                                                    "hidden": false,
+                                                                                                                    "title": "",
+                                                                                                                    "isLocked": false,
+                                                                                                                    "condition": true,
+                                                                                                                    "conditionGroup": ""
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "componentName": "Button",
+                                                                                                            "id": "node_ocl6fwopsg63",
+                                                                                                            "props": {
+                                                                                                                "prefix": "next-",
+                                                                                                                "type": "normal",
+                                                                                                                "size": "medium",
+                                                                                                                "htmlType": "button",
+                                                                                                                "component": "button",
+                                                                                                                "children": "停止",
+                                                                                                                "icon": "prompt",
+                                                                                                                "iconSize": "xs",
+                                                                                                                "ghost": false,
+                                                                                                                "loading": false,
+                                                                                                                "text": false,
+                                                                                                                "warning": false,
+                                                                                                                "disabled": false
+                                                                                                            },
+                                                                                                            "hidden": false,
+                                                                                                            "title": "",
+                                                                                                            "isLocked": false,
+                                                                                                            "condition": true,
+                                                                                                            "conditionGroup": "",
+                                                                                                            "loop": {
+                                                                                                                "type": "JSExpression",
+                                                                                                                "value": "false",
+                                                                                                                "mock": []
+                                                                                                            },
+                                                                                                            "loopArgs": [
+                                                                                                                "",
+                                                                                                                ""
+                                                                                                            ],
+                                                                                                            "children": [
+                                                                                                                {
+                                                                                                                    "componentName": "Icon",
+                                                                                                                    "id": "node_ocl6fwopsg6m",
+                                                                                                                    "props": {
+                                                                                                                        "type": "prompt",
+                                                                                                                        "style": {
+                                                                                                                            "marginRight": 5
+                                                                                                                        },
+                                                                                                                        "size": "medium"
+                                                                                                                    },
+                                                                                                                    "hidden": false,
+                                                                                                                    "title": "",
+                                                                                                                    "isLocked": false,
+                                                                                                                    "condition": true,
+                                                                                                                    "conditionGroup": "",
+                                                                                                                    "loop": [
+                                                                                                                        1
+                                                                                                                    ],
+                                                                                                                    "loopArgs": [
+                                                                                                                        "",
+                                                                                                                        ""
+                                                                                                                    ]
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "componentName": "Button",
+                                                                                                            "id": "node_ocl6fwopsg6h",
+                                                                                                            "props": {
+                                                                                                                "prefix": "next-",
+                                                                                                                "type": "normal",
+                                                                                                                "size": "medium",
+                                                                                                                "htmlType": "button",
+                                                                                                                "component": "button",
+                                                                                                                "children": "打包下载（仅流程）",
+                                                                                                                "icon": "download",
+                                                                                                                "iconSize": "xxs",
+                                                                                                                "ghost": false,
+                                                                                                                "loading": false,
+                                                                                                                "text": false,
+                                                                                                                "warning": false,
+                                                                                                                "disabled": false
+                                                                                                            },
+                                                                                                            "hidden": false,
+                                                                                                            "title": "",
+                                                                                                            "isLocked": false,
+                                                                                                            "condition": true,
+                                                                                                            "conditionGroup": "",
+                                                                                                            "loop": {
+                                                                                                                "type": "JSExpression",
+                                                                                                                "value": "false",
+                                                                                                                "mock": []
+                                                                                                            },
+                                                                                                            "loopArgs": [
+                                                                                                                "",
+                                                                                                                ""
+                                                                                                            ],
+                                                                                                            "children": [
+                                                                                                                {
+                                                                                                                    "componentName": "Icon",
+                                                                                                                    "id": "node_ocl6fwopsg6n",
+                                                                                                                    "props": {
+                                                                                                                        "type": "download",
+                                                                                                                        "style": {
+                                                                                                                            "marginRight": 5
+                                                                                                                        }
+                                                                                                                    },
+                                                                                                                    "hidden": false,
+                                                                                                                    "title": "",
+                                                                                                                    "isLocked": false,
+                                                                                                                    "condition": true,
+                                                                                                                    "conditionGroup": ""
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "componentName": "Button",
+                                                                                                            "id": "node_ocl6fwopsg6k",
+                                                                                                            "props": {
+                                                                                                                "prefix": "next-",
+                                                                                                                "type": "primary",
+                                                                                                                "size": "medium",
+                                                                                                                "htmlType": "button",
+                                                                                                                "component": "button",
+                                                                                                                "children": "导入",
+                                                                                                                "icon": "upload",
+                                                                                                                "iconSize": "xxs",
+                                                                                                                "ghost": false,
+                                                                                                                "loading": false,
+                                                                                                                "text": false,
+                                                                                                                "warning": false,
+                                                                                                                "disabled": false
+                                                                                                            },
+                                                                                                            "hidden": false,
+                                                                                                            "title": "",
+                                                                                                            "isLocked": false,
+                                                                                                            "condition": true,
+                                                                                                            "conditionGroup": "",
+                                                                                                            "loop": {
+                                                                                                                "type": "JSExpression",
+                                                                                                                "value": "false",
+                                                                                                                "mock": []
+                                                                                                            },
+                                                                                                            "loopArgs": [
+                                                                                                                "",
+                                                                                                                ""
+                                                                                                            ],
+                                                                                                            "children": [
+                                                                                                                {
+                                                                                                                    "componentName": "Icon",
+                                                                                                                    "id": "node_ocl6fwopsg6o",
+                                                                                                                    "props": {
+                                                                                                                        "type": "upload",
+                                                                                                                        "style": {
+                                                                                                                            "marginRight": 5
+                                                                                                                        }
+                                                                                                                    },
+                                                                                                                    "hidden": false,
+                                                                                                                    "title": "",
+                                                                                                                    "isLocked": false,
+                                                                                                                    "condition": true,
+                                                                                                                    "conditionGroup": ""
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    ]
+                                                                                                }
+                                                                                            ]
+                                                                                        },
                                                                                         {
                                                                                             "componentName": "RcExpandedTable",
                                                                                             "id": "node_ocl61nb0y8b",
@@ -845,6 +1345,15 @@
                                                                                                                                     "isLocked": false,
                                                                                                                                     "condition": true,
                                                                                                                                     "conditionGroup": "",
+                                                                                                                                    "loop": {
+                                                                                                                                        "type": "JSExpression",
+                                                                                                                                        "value": "false",
+                                                                                                                                        "mock": []
+                                                                                                                                    },
+                                                                                                                                    "loopArgs": [
+                                                                                                                                        "",
+                                                                                                                                        ""
+                                                                                                                                    ],
                                                                                                                                     "children": [
                                                                                                                                         {
                                                                                                                                             "componentName": "Tab.Item",
@@ -917,7 +1426,7 @@
                                                                                                                                                                 "aligin": "left"
                                                                                                                                                             }
                                                                                                                                                         ],
-                                                                                                                                                        "rowSelection": false,
+                                                                                                                                                        "rowSelection": true,
                                                                                                                                                         "pagination": false
                                                                                                                                                     },
                                                                                                                                                     "hidden": false,
@@ -955,13 +1464,49 @@
                                                                                                                             20,
                                                                                                                             50,
                                                                                                                             100
-                                                                                                                        ]
+                                                                                                                        ],
+                                                                                                                        "__events": {
+                                                                                                                            "eventDataList": [
+                                                                                                                                {
+                                                                                                                                    "type": "componentEvent",
+                                                                                                                                    "name": "onExpand",
+                                                                                                                                    "relatedEventName": "onExpandByMonitor"
+                                                                                                                                }
+                                                                                                                            ],
+                                                                                                                            "eventList": [
+                                                                                                                                {
+                                                                                                                                    "name": "onExpand",
+                                                                                                                                    "disabled": true
+                                                                                                                                },
+                                                                                                                                {
+                                                                                                                                    "name": "onChange",
+                                                                                                                                    "disabled": false
+                                                                                                                                },
+                                                                                                                                {
+                                                                                                                                    "name": "rowSelection_onChange",
+                                                                                                                                    "disabled": false
+                                                                                                                                }
+                                                                                                                            ]
+                                                                                                                        },
+                                                                                                                        "onExpand": {
+                                                                                                                            "type": "JSFunction",
+                                                                                                                            "value": "function(){this.onExpandByMonitor.apply(this,Array.prototype.slice.call(arguments).concat([])) }"
+                                                                                                                        }
                                                                                                                     },
                                                                                                                     "hidden": false,
                                                                                                                     "title": "",
                                                                                                                     "isLocked": false,
                                                                                                                     "condition": true,
-                                                                                                                    "conditionGroup": ""
+                                                                                                                    "conditionGroup": "",
+                                                                                                                    "loop": {
+                                                                                                                        "type": "JSExpression",
+                                                                                                                        "value": "false",
+                                                                                                                        "mock": []
+                                                                                                                    },
+                                                                                                                    "loopArgs": [
+                                                                                                                        "",
+                                                                                                                        ""
+                                                                                                                    ]
                                                                                                                 }
                                                                                                             ]
                                                                                                         }
@@ -969,14 +1514,17 @@
                                                                                                 },
                                                                                                 "rowSelection": true,
                                                                                                 "pagination": true,
-                                                                                                "current": 1,
+                                                                                                "current": {
+                                                                                                    "type": "JSExpression",
+                                                                                                    "value": "this.state.page"
+                                                                                                },
                                                                                                 "showSizeChanger": true,
                                                                                                 "type": "checkbox",
                                                                                                 "pageSizeOptions": [
-                                                                                                    10,
                                                                                                     20,
-                                                                                                    50,
-                                                                                                    100
+                                                                                                    25,
+                                                                                                    30,
+                                                                                                    50
                                                                                                 ],
                                                                                                 "pagination_size": "default",
                                                                                                 "showTotal": {
@@ -989,6 +1537,11 @@
                                                                                                             "type": "componentEvent",
                                                                                                             "name": "onExpand",
                                                                                                             "relatedEventName": "onExpand"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "type": "componentEvent",
+                                                                                                            "name": "onChange",
+                                                                                                            "relatedEventName": "onChange"
                                                                                                         }
                                                                                                     ],
                                                                                                     "eventList": [
@@ -998,7 +1551,7 @@
                                                                                                         },
                                                                                                         {
                                                                                                             "name": "onChange",
-                                                                                                            "disabled": false
+                                                                                                            "disabled": true
                                                                                                         },
                                                                                                         {
                                                                                                             "name": "rowSelection_onChange",
@@ -1009,6 +1562,18 @@
                                                                                                 "onExpand": {
                                                                                                     "type": "JSFunction",
                                                                                                     "value": "function(){this.onExpand.apply(this,Array.prototype.slice.call(arguments).concat([])) }"
+                                                                                                },
+                                                                                                "onChange": {
+                                                                                                    "type": "JSFunction",
+                                                                                                    "value": "function(){this.onChange.apply(this,Array.prototype.slice.call(arguments).concat([])) }"
+                                                                                                },
+                                                                                                "pageSize": {
+                                                                                                    "type": "JSExpression",
+                                                                                                    "value": "this.state.rows"
+                                                                                                },
+                                                                                                "total": {
+                                                                                                    "type": "JSExpression",
+                                                                                                    "value": "this.state.total"
                                                                                                 }
                                                                                             },
                                                                                             "docId": "docl61nb0y8",
@@ -1016,12 +1581,365 @@
                                                                                             "title": "",
                                                                                             "isLocked": false,
                                                                                             "condition": true,
-                                                                                            "conditionGroup": ""
+                                                                                            "conditionGroup": "",
+                                                                                            "loop": {
+                                                                                                "type": "JSExpression",
+                                                                                                "value": "false",
+                                                                                                "mock": []
+                                                                                            },
+                                                                                            "loopArgs": [
+                                                                                                "",
+                                                                                                ""
+                                                                                            ]
                                                                                         }
                                                                                     ]
                                                                                 }
                                                                             ]
                                                                         }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "componentName": "Dialog",
+                                    "id": "node_ocl6fwowpj30",
+                                    "props": {
+                                        "prefix": "next-",
+                                        "footerAlign": "right",
+                                        "title": "新增流程",
+                                        "footer": false,
+                                        "closeable": "esc,close",
+                                        "hasMask": true,
+                                        "align": "cc cc",
+                                        "minMargin": 40,
+                                        "isAutoContainer": true,
+                                        "visible": {
+                                            "type": "JSExpression",
+                                            "value": "this.state.addProcessShow",
+                                            "mock": true
+                                        },
+                                        "style": {
+                                            "width": "500px"
+                                        },
+                                        "footerActions": [
+                                            "ok",
+                                            "cancel"
+                                        ]
+                                    },
+                                    "hidden": true,
+                                    "title": "新增流程",
+                                    "isLocked": false,
+                                    "condition": true,
+                                    "conditionGroup": "",
+                                    "loopArgs": [
+                                        "",
+                                        ""
+                                    ],
+                                    "loop": {
+                                        "type": "JSExpression",
+                                        "value": "false",
+                                        "mock": [
+                                            1
+                                        ]
+                                    },
+                                    "children": [
+                                        {
+                                            "componentName": "NextP",
+                                            "id": "node_ocl6fwowpj3i",
+                                            "props": {
+                                                "wrap": false,
+                                                "type": "body2",
+                                                "verAlign": "middle",
+                                                "textSpacing": true,
+                                                "align": "left",
+                                                "full": true
+                                            },
+                                            "docId": "docl6fwowpj",
+                                            "title": "段落",
+                                            "hidden": false,
+                                            "isLocked": false,
+                                            "condition": true,
+                                            "conditionGroup": "",
+                                            "loopArgs": [
+                                                "",
+                                                ""
+                                            ],
+                                            "loop": [
+                                                1
+                                            ],
+                                            "children": [
+                                                {
+                                                    "componentName": "Form",
+                                                    "id": "node_ocl6fwowpj3j",
+                                                    "props": {
+                                                        "labelCol": {
+                                                            "span": 2
+                                                        },
+                                                        "wrapperCol": {
+                                                            "span": 14
+                                                        },
+                                                        "labelAlign": "left",
+                                                        "size": "medium",
+                                                        "labelTextAlign": "left",
+                                                        "device": "desktop",
+                                                        "field": {
+                                                            "type": "JSExpression",
+                                                            "value": "this.state.addProcessField"
+                                                        }
+                                                    },
+                                                    "docId": "docl6fwowpj",
+                                                    "hidden": false,
+                                                    "title": "",
+                                                    "isLocked": false,
+                                                    "condition": true,
+                                                    "conditionGroup": "",
+                                                    "loopArgs": [
+                                                        "",
+                                                        ""
+                                                    ],
+                                                    "loop": [
+                                                        1
+                                                    ],
+                                                    "children": [
+                                                        {
+                                                            "componentName": "Form.Item",
+                                                            "id": "node_ocl6fwowpj3k",
+                                                            "props": {
+                                                                "label": "流程名",
+                                                                "required": true,
+                                                                "size": "medium",
+                                                                "labelAlign": "left",
+                                                                "labelTextAlign": "right",
+                                                                "device": "desktop",
+                                                                "labelCol": {
+                                                                    "span": 6
+                                                                },
+                                                                "requiredMessage": "流程名不能为空"
+                                                            },
+                                                            "docId": "docl6fwowpj",
+                                                            "hidden": false,
+                                                            "title": "",
+                                                            "isLocked": false,
+                                                            "condition": true,
+                                                            "conditionGroup": "",
+                                                            "loopArgs": [
+                                                                "",
+                                                                ""
+                                                            ],
+                                                            "children": [
+                                                                {
+                                                                    "componentName": "Input",
+                                                                    "id": "node_ocl6fwowpj3l",
+                                                                    "props": {
+                                                                        "name": "NodeName",
+                                                                        "size": "medium",
+                                                                        "placeholder": ""
+                                                                    },
+                                                                    "docId": "docl6fwowpj",
+                                                                    "hidden": false,
+                                                                    "title": "",
+                                                                    "isLocked": false,
+                                                                    "condition": true,
+                                                                    "conditionGroup": "",
+                                                                    "loopArgs": [
+                                                                        "",
+                                                                        ""
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "componentName": "Form.Item",
+                                                            "id": "node_ocl6fwowpj3m",
+                                                            "props": {
+                                                                "label": "流程ID",
+                                                                "required": false,
+                                                                "size": "medium",
+                                                                "labelAlign": "left",
+                                                                "labelTextAlign": "right",
+                                                                "device": "desktop",
+                                                                "labelCol": {
+                                                                    "span": 6
+                                                                }
+                                                            },
+                                                            "docId": "docl6fwowpj",
+                                                            "hidden": false,
+                                                            "title": "",
+                                                            "isLocked": false,
+                                                            "condition": true,
+                                                            "conditionGroup": "",
+                                                            "loopArgs": [
+                                                                "",
+                                                                ""
+                                                            ],
+                                                            "loop": [
+                                                                1
+                                                            ],
+                                                            "children": [
+                                                                {
+                                                                    "componentName": "Input",
+                                                                    "id": "node_ocl6fwowpj3r",
+                                                                    "props": {
+                                                                        "hasBorder": true,
+                                                                        "size": "medium",
+                                                                        "autoComplete": "off",
+                                                                        "placeholder": "",
+                                                                        "disabled": true,
+                                                                        "name": "Processid"
+                                                                    },
+                                                                    "hidden": false,
+                                                                    "title": "",
+                                                                    "isLocked": false,
+                                                                    "condition": true,
+                                                                    "conditionGroup": "",
+                                                                    "loopArgs": [
+                                                                        "",
+                                                                        ""
+                                                                    ],
+                                                                    "loop": [
+                                                                        1
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "componentName": "Form.Item",
+                                                            "id": "node_ocl6fwowpj3o",
+                                                            "props": {
+                                                                "label": "",
+                                                                "size": "medium",
+                                                                "labelAlign": "left",
+                                                                "labelTextAlign": "left",
+                                                                "device": "desktop",
+                                                                "labelCol": {
+                                                                    "span": 6
+                                                                },
+                                                                "wrapperCol": {
+                                                                    "offset": 6
+                                                                }
+                                                            },
+                                                            "docId": "docl6fwowpj",
+                                                            "hidden": false,
+                                                            "title": "",
+                                                            "isLocked": false,
+                                                            "condition": true,
+                                                            "conditionGroup": "",
+                                                            "loop": 1,
+                                                            "loopArgs": [
+                                                                "",
+                                                                ""
+                                                            ],
+                                                            "children": [
+                                                                {
+                                                                    "componentName": "Form.Submit",
+                                                                    "id": "node_ocl6fwowpj3p",
+                                                                    "props": {
+                                                                        "type": "primary",
+                                                                        "validate": true,
+                                                                        "children": "完成",
+                                                                        "icon": "",
+                                                                        "size": "small",
+                                                                        "iconSize": "xxs",
+                                                                        "ghost": false,
+                                                                        "loading": false,
+                                                                        "text": false,
+                                                                        "warning": false,
+                                                                        "htmlType": "",
+                                                                        "__events": {
+                                                                            "eventDataList": [
+                                                                                {
+                                                                                    "type": "componentEvent",
+                                                                                    "name": "onClick",
+                                                                                    "relatedEventName": "onClick_processSubmit"
+                                                                                }
+                                                                            ],
+                                                                            "eventList": [
+                                                                                {
+                                                                                    "name": "onClick",
+                                                                                    "description": "点击提交后触发\n@param {Object} value 数据\n@param {Object} errors 错误数据\n@param {class} field 实例",
+                                                                                    "disabled": true
+                                                                                },
+                                                                                {
+                                                                                    "name": "onMouseUp",
+                                                                                    "disabled": false
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        "onClick": {
+                                                                            "type": "JSFunction",
+                                                                            "value": "function(){this.onClick_processSubmit.apply(this,Array.prototype.slice.call(arguments).concat([])) }"
+                                                                        }
+                                                                    },
+                                                                    "docId": "docl6fwowpj",
+                                                                    "hidden": false,
+                                                                    "title": "",
+                                                                    "isLocked": false,
+                                                                    "condition": true,
+                                                                    "conditionGroup": "",
+                                                                    "loop": 1,
+                                                                    "loopArgs": [
+                                                                        "",
+                                                                        ""
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "componentName": "Form.Reset",
+                                                                    "id": "node_ocl6fwowpj3q",
+                                                                    "props": {
+                                                                        "style": {
+                                                                            "marginLeft": 10
+                                                                        },
+                                                                        "children": "取消",
+                                                                        "type": "primary",
+                                                                        "size": "small",
+                                                                        "iconSize": "xxs",
+                                                                        "ghost": false,
+                                                                        "toDefault": false,
+                                                                        "loading": false,
+                                                                        "text": false,
+                                                                        "warning": false,
+                                                                        "disabled": false,
+                                                                        "__events": {
+                                                                            "eventDataList": [
+                                                                                {
+                                                                                    "type": "componentEvent",
+                                                                                    "name": "onClick",
+                                                                                    "relatedEventName": "closeAddProcess"
+                                                                                }
+                                                                            ],
+                                                                            "eventList": [
+                                                                                {
+                                                                                    "name": "onClick",
+                                                                                    "description": "点击提交后触发",
+                                                                                    "disabled": true
+                                                                                },
+                                                                                {
+                                                                                    "name": "onMouseUp",
+                                                                                    "disabled": false
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        "onClick": {
+                                                                            "type": "JSFunction",
+                                                                            "value": "function(){this.closeAddProcess.apply(this,Array.prototype.slice.call(arguments).concat([])) }"
+                                                                        }
+                                                                    },
+                                                                    "docId": "docl6fwowpj",
+                                                                    "hidden": false,
+                                                                    "title": "",
+                                                                    "isLocked": false,
+                                                                    "condition": true,
+                                                                    "conditionGroup": "",
+                                                                    "loop": 1,
+                                                                    "loopArgs": [
+                                                                        "",
+                                                                        ""
                                                                     ]
                                                                 }
                                                             ]
